@@ -3,4 +3,8 @@
 # To modify the layout, see https://jekyllrb.com/docs/themes/#overriding-theme-defaults
 
 layout: home
+title: Water Usage Analysis
+heading: Albuquerque Water Usage Analysis
 ---
+
+Coming soon...
