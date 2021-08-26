@@ -2,9 +2,8 @@
 # Feel free to add content and custom Front Matter to this file.
 # To modify the layout, see https://jekyllrb.com/docs/themes/#overriding-theme-defaults
 
-layout: home
-title: Water Usage?
-heading: WUA Analysis
+layout: page
+title: Timeline
 ---
 
-Coming soon...
+Stay tuned...
