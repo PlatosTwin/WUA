@@ -18,17 +18,17 @@
 # You can create any custom variable you would like, and they will be accessible
 # in the templates via {{ site.myvariable }}.
 
-title: Albuquerque Water Usage Analyses
+title: WUA Analyses
 description: >- # this means to ignore newlines until "baseurl:"
   Explore water usage as reported by Advanced Metering Infrastructure water meters
   in Albuquerque, New Mexico.
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "" # the base hostname & protocol for your site, e.g. http://example.com
 github_username:  PlatosTwin
-repository: PlatosTwin/LawSchoolData
+repository: PlatosTwin/WUA
 
 # Build settings
-theme: minima
+theme: beautiful-jekyll-theme
 plugins:
   - jekyll-feed
 
