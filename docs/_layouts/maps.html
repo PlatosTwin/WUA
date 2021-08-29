@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="{{ page.lang | default: site.lang | default: "en" }}">
+
+  {%- include head.html -%}
+
+  <link rel="shortcut icon" type="image/x-icon" href="favicon.png?">
+
+  <body>
+
+    {%- include header.html -%}
+
+        {{ content }}
+
+  </body>
+
+<footer style="text-align:center; color:grey; font-size:70%; font-family:courier;">
+      This site is not affiliated with either the City of Albuquerque or the Albuquerque Water Utility Authority. &copy; 2021
+  <p></p>
+</footer>
+
+</html>

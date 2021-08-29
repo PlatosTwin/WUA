@@ -3,7 +3,13 @@
 # To modify the layout, see https://jekyllrb.com/docs/themes/#overriding-theme-defaults
 
 layout: page
-title: About the Data
+title: By the Numbers
+classes: wide
 ---
 
-Stay tuned...
+- 13,760,088 raw rows
+- 13,759,232 valid rows
+- 116,998 unique addresses
+- 116,990 geolocated addresses
+- 119 days of data per address (approximately)
+- 24 readings (hourly) per day

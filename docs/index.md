@@ -5,6 +5,7 @@
 layout: page
 title: Overview
 heading: WUA Analysis
+classes: wide
 ---
 
 Coming soon...

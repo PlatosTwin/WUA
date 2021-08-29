@@ -4,6 +4,7 @@
 
 layout: page
 title: Timeline
+classes: wide
 ---
 
 Stay tuned...

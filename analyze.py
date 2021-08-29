@@ -4,13 +4,13 @@ import folium
 from folium import plugins
 import plotly
 import plotly.express as px
+import plotly.graph_objects as go
 import plotly.io as pio
 import numpy as np
 import time
 import threading
 
 #####
-# TODO: Screen out addresses with greater than ~100 cubic feet/hour of use, to limit to residential
 # TODO: Map largest individual users
 # TODO: Add popups to maps
 # TODO: Check whether df_geo num. rows == df.groupby(['latitude', 'longitude']) num. rows
@@ -20,65 +20,59 @@ import threading
 # TODO: Sprinkler use study (add M, W, F and subtract T, R, S?)
 #####
 
+#####
+#  Front matter
+#####
+
 #  Suppress Pandas SettingWithCopyWarning
 pd.options.mode.chained_assignment = None
 
-
-
-# fname19 = f'DataFiles/WUA_full_2019.csv'
-# df19 = pd.read_csv(fname19, skiprows=0, low_memory=False)
-# df19.rename(columns={'tract_geoid': 'tract_geoid_19'}, inplace=True)
-#
-# fname20 = f'DataFiles/WUA_full_2020.csv'
-# df20 = pd.read_csv(fname20, skiprows=0, low_memory=False)
-# df20.rename(columns={'tract_geoid': 'tract_geoid_20'}, inplace=True)
-#
-# df_full = df20.merge(df19, left_index=True, right_index=True,
-#                      how='outer', suffixes=('', '_DROP')).filter(regex='^(?!.*_DROP)')
-#
-# cols_to_order = ['latitude', 'longitude', 'tract_geoid_19', 'tract_geoid_20']
-# new_columns = cols_to_order + (df_full.columns.drop(cols_to_order).tolist())
-# df_full = df_full[new_columns]
-#
-# df_full.to_csv('DataFiles/WUA_full.csv', index=False)
-
-
-
-
-#  Read in cleaned Water Utility Authority data
+#  Read in processed Water Utility Authority data
 print('\nReading-in data...')
 downsamp = ''#'_downsamp_f0.075_r1'
 fname = f'DataFiles/WUA_full{downsamp}.csv'
 df_full = pd.read_csv(fname, skiprows=0, low_memory=False, nrows=10000)
 
-#  Get lat./long. from df
-df_coord = df_full.drop_duplicates(subset='ADDRESS')[['latitude', 'longitude']].copy()
+print(f'Shape of {fname}: {df_full.shape}')
 
-#  Screen both df and df_geo for duplicate/out-of-bounds addresses
-#   Combine identical locations in df_geo
-ncoord = df_coord.shape[0]
-df_coord = df_coord.groupby(['latitude', 'longitude']).sum().reset_index()
-print(f'\n{ncoord - df_coord.shape[0]} addresses ({100 * (ncoord - df_coord.shape[0]) / ncoord:.2f}%) resolved to the same location '
-      f'as an existing address; these \nduplicates have been removed and their quantities added to the originals.')
+#  Screen out mis-located addresses in df_full, i.e., those misidentified to be outside of Albuquerque
+ndf_full = df_full.shape[0]
+df_full = df_full[(df_full['tract_geoid_20'] < 35002000000) &
+                  (df_full['tract_geoid_20'] >= 35001000000)]  # Relevant tracts: 35001xxxxxx
 
-#   Screen out mis-located addresses in df, i.e., those misidentified to be outside of Albuquerque
-ndf = df_full.shape[0]
-df_full = df_full[(df_full['tract_geoid_19'] < 35002000000) &
-                  (df_full['tract_geoid_19'] >= 35001000000)]  # Relevant tracts: 35001xxxxxx
-print(f'\n{ndf - df_full.shape[0]} entries ({100 * (ndf - df_full.shape[0]) / ndf:.2f}%) in df resolved to locations outside '
-      f'of Albuquerque; these \nhave been removed.')
+print(f'\n{ndf_full - df_full.shape[0]} entries ({100 * (ndf_full - df_full.shape[0]) / ndf_full:.2f}%) in df resolved to locations '
+      f'outside of Albuquerque and have been removed.')
 
-#   Screen out mis-located addresses in df_geo, i.e., those misidentified to be outside of Albuquerque
-ncoord = df_coord.shape[0]
-df_coord = df_coord[(df_coord['latitude'] <= 35.4) &
-                    (df_coord['latitude'] >= 34.7) &
-                    (df_coord['longitude'] <= -106.2) &
-                    (df_coord['longitude'] >= -107.)]
-print(f'\n{ncoord - df_coord.shape[0]} locations ({100 * (ncoord - df_coord.shape[0]) / ncoord:.2f}%) in df_geo resolved to '
-      f'locations outside of Albuquerque; these \nhave been removed.')
+#  Get unique lat./long. from location delimited df_full
+ncoord = df_full.drop_duplicates(subset='ADDRESS').shape[0]
+df_coord = df_full.drop_duplicates(subset='ADDRESS')[['latitude', 'longitude']].drop_duplicates(subset=['latitude', 'longitude'])
+
+#  Screen df_full for duplicate lat./long. (location) and drop duplicates (TODO: sum instead of dropping)
+temp = df_full.drop_duplicates(subset='ADDRESS')
+address_duplicates = temp[temp.duplicated(subset=['latitude', 'longitude'])]['ADDRESS'].index
+df_full.drop(address_duplicates, inplace=True)
+
+print(f'\n{ncoord - df_coord.shape[0]} addresses ({100 * (ncoord - df_coord.shape[0]) / ncoord:.2f}% of the {ncoord} '
+      f'within city limits) resolved to the same location as an existing address. '
+      f'\nOnly data for the first of the duplicate entries has been retained.')
+
+df_full.drop(['ADDRESS'], axis=1)
+
+#  Convert READDATE to datetime type
+df_full.loc[:, 'READDATE'] = pd.to_datetime(df_full['READDATE'])
 
 #  Filter df_full to include only low-use (residential) addresses, putting high-use (commerical) into df_high
-# want mean hourly usage and mean hourly usage std. dev.
+mean_daily = df_full.groupby(['latitude', 'longitude']).mean()[[f'USAGE{i}' for i in range(1, 25)]].mean(axis=1)
+daily_mu = mean_daily.mean()
+daily_sigma = mean_daily.std()
+high = mean_daily[mean_daily > daily_mu + 2*daily_sigma].index
+
+drop_high = []
+for pair in high:
+    drop_high.append(df_full[(df_full['latitude'] == pair[0]) & (df_full['longitude'] == pair[1])].index)
+
+df_high = df_full.iloc[list(np.concatenate(drop_high).flat)]
+df_full.drop(list(np.concatenate(drop_high).flat), inplace=True)
 
 #  Set up for threading, to perform file save operations in the background
 class BackgroundSave(threading.Thread):
@@ -102,6 +96,73 @@ class BackgroundSave(threading.Thread):
         #  Wait 0.5 seconds
         time.sleep(0.5)
 
+#####
+# Water usage timeline calculations
+#####
+
+print('\nCalcuating water usage timeline...')
+
+timeline = df_full.groupby(['READDATE']).mean().drop(
+    columns=['latitude', 'longitude', 'tract_geoid_19', 'tract_geoid_20']).reset_index()
+
+num_days = timeline.shape[0]
+days_from_start = np.arange(num_days)
+
+#  Segment timeline to days of week
+day_names = ['mon', 'tues', 'wed', 'thurs', 'fri', 'sat', 'sun']
+for i, d in enumerate(day_names):
+    exec(d + ' = timeline[(days_from_start % 7 == i)]')
+
+#  Segment timeline to weeks
+weeks = [timeline.iloc[7*i : 7*(i+1)] for i in range(0, 17)]
+
+mean_weekly = [weeks[k][[f'USAGE{i}' for i in range(1, 25)]].mean(axis=1).mean() for k in range(0, 17)]
+
+days_of_week = []
+for d in day_names:
+    exec('temp = ' + d)
+    days_of_week.append([temp.mean(axis=1).mean(), temp.mean(axis=1).std()])
+
+#  Create figure
+fig = go.Figure(layout_yaxis_range=[0, 4])
+
+dataset = sun
+for k in range(dataset.shape[0]):
+    fig.add_trace(
+        go.Bar(
+            visible=False,
+            x=[i for i in range(0, 25)],
+            y=dataset.iloc[k],
+            name='Primary Product',
+            marker_color='indianred'
+        )
+    )
+
+fig.data[0].visible = True
+
+steps = []
+for i in range(len(fig.data)):
+    step = dict(
+        method="update",
+        args=[{"visible": [False] * len(fig.data)},
+              {"title": "Slider switched to step: " + str(i)}],  # layout attribute
+    )
+    step["args"][0]["visible"][i] = True  # Toggle i'th trace to "visible"
+    steps.append(step)
+
+sliders = [dict(
+    active=0,
+    currentvalue={"prefix": "Frequency: "},
+    pad={"t": 50},
+    steps=steps
+)]
+
+fig.update_layout(
+    sliders=sliders,
+    title_text='Mean Hourly Usage'
+)
+
+# fig.show()
 
 #####
 # Meter location mapping
@@ -156,7 +217,7 @@ print('\nCalcuating water usage metrics...')
 total_mean_usage_hrly = df_full.groupby(['latitude', 'longitude']).mean().drop(
     columns=['tract_geoid_19', 'tract_geoid_20']).mean().to_numpy()
 
-print('foo')
+
 fig = px.bar(total_mean_usage_hrly)
 
 # fig.show()
@@ -166,7 +227,7 @@ background_fig = BackgroundSave(fig, f'HourlyBar_n{df_coord.shape[0]}{downsamp}.
 background_fig.start()
 
 #####
-# Water usage mapping
+# Water usage mapping (choropleth)
 # Census tract shape files: https://www.census.gov/geographies/mapping-files/time-series/geo/cartographic-boundary.html
 # Shape file to JSON converter: https://mapshaper.org/
 # ACS 2019 by-tract population: https://data.census.gov/cedsci/table?g=0500000US35001.140000&tid=ACSDT5Y2019.B01003
@@ -183,13 +244,13 @@ usage_start = np.where(df_full.columns.values == 'USAGE1')[0][0]  # First column
 
 #  Group by tract to get mean daily usage
 df_tract = df_full.groupby(['tract_geoid_19']).mean()[df_full.columns.values[usage_start:]].sum(axis=1).reset_index()
-df_tract['tract_geoid_19'] = df_tract.tract_geoid.astype(str)
+df_tract['tract_geoid_19'] = df_tract.tract_geoid_19.astype(str)
 df_tract.rename(columns={0: 'mean_usage_daily'}, inplace=True)
 
 #  Add mean daily usage and population to df_tract
 df_tract['mean_usage_daily'] = \
     np.log(df_tract['mean_usage_daily'].replace(0.0, np.nan)).replace(np.nan, 0.0)
-df_tract = df_tract.merge(df_acs, left_on='tract_geoid_19', right_on='GEO_ID', how='outer')
+df_tract = df_tract.merge(df_acs, left_on='tract_geoid_19', right_on='GEO_ID', how='inner')
 
 #  Initialize mapping
 tracts = folium.Map(
