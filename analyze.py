@@ -29,17 +29,15 @@ pd.options.mode.chained_assignment = None
 
 #  Read in processed Water Utility Authority data
 print('\nReading-in data...')
-downsamp = ''#'_downsamp_f0.075_r1'
+downsamp = '_downsamp_f0.15_r1'
 fname = f'DataFiles/WUA_full{downsamp}.csv'
-df_full = pd.read_csv(fname, skiprows=0, low_memory=False, nrows=10000)
-
-print(f'Shape of {fname}: {df_full.shape}')
+df_full = pd.read_csv(fname, skiprows=0, low_memory=False)
 
 #  Get lat./long. from location delimited df_full
 df_coord = df_full.drop_duplicates(subset='ADDRESS')[['latitude', 'longitude']]
 
 #  Drop ADDRESS column
-df_full.drop(['ADDRESS'], axis=1)
+df_full.drop(['ADDRESS'], axis=1, inplace=True)
 
 #  Convert READDATE to datetime type
 df_full.loc[:, 'READDATE'] = pd.to_datetime(df_full['READDATE'])
@@ -56,6 +54,7 @@ for pair in high:
 
 df_high = df_full.iloc[list(np.concatenate(drop_high).flat)]
 df_full.drop(list(np.concatenate(drop_high).flat), inplace=True)
+
 
 #  Set up for threading, to perform file save operations in the background
 class BackgroundSave(threading.Thread):
@@ -78,6 +77,7 @@ class BackgroundSave(threading.Thread):
 
         #  Wait 0.5 seconds
         time.sleep(0.5)
+
 
 #####
 # Water usage timeline calculations
