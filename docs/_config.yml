@@ -29,8 +29,8 @@ repository: PlatosTwin/WUA
 
 # Build settings
 theme: minima
-#plugins:
-#  - jekyll-feed
+plugins:
+  - jekyll-feed
 
 # Other
 header_pages:
