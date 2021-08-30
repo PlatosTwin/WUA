@@ -35,26 +35,8 @@ df_full = pd.read_csv(fname, skiprows=0, low_memory=False, nrows=10000)
 
 print(f'Shape of {fname}: {df_full.shape}')
 
-#  Screen out mis-located addresses in df_full, i.e., those misidentified to be outside of Albuquerque
-ndf_full = df_full.shape[0]
-df_full = df_full[(df_full['tract_geoid_20'] < 35002000000) &
-                  (df_full['tract_geoid_20'] >= 35001000000)]  # Relevant tracts: 35001xxxxxx
-
-print(f'\n{ndf_full - df_full.shape[0]} entries ({100 * (ndf_full - df_full.shape[0]) / ndf_full:.2f}%) in df resolved to locations '
-      f'outside of Albuquerque and have been removed.')
-
-#  Get unique lat./long. from location delimited df_full
-ncoord = df_full.drop_duplicates(subset='ADDRESS').shape[0]
-df_coord = df_full.drop_duplicates(subset='ADDRESS')[['latitude', 'longitude']].drop_duplicates(subset=['latitude', 'longitude'])
-
-#  Screen df_full for duplicate lat./long. (location) and drop duplicates (TODO: sum instead of dropping)
-temp = df_full.drop_duplicates(subset='ADDRESS')
-address_duplicates = temp[temp.duplicated(subset=['latitude', 'longitude'])]['ADDRESS'].index
-df_full.drop(address_duplicates, inplace=True)
-
-print(f'\n{ncoord - df_coord.shape[0]} addresses ({100 * (ncoord - df_coord.shape[0]) / ncoord:.2f}% of the {ncoord} '
-      f'within city limits) resolved to the same location as an existing address. '
-      f'\nOnly data for the first of the duplicate entries has been retained.')
+#  Get lat./long. from location delimited df_full
+df_coord = df_full.drop_duplicates(subset='ADDRESS')[['latitude', 'longitude']]
 
 df_full.drop(['ADDRESS'], axis=1)
 
@@ -119,6 +101,7 @@ weeks = [timeline.iloc[7*i : 7*(i+1)] for i in range(0, 17)]
 mean_weekly = [weeks[k][[f'USAGE{i}' for i in range(1, 25)]].mean(axis=1).mean() for k in range(0, 17)]
 
 days_of_week = []
+temp = None
 for d in day_names:
     exec('temp = ' + d)
     days_of_week.append([temp.mean(axis=1).mean(), temp.mean(axis=1).std()])

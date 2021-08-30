@@ -16,6 +16,15 @@ cols_to_order = ['latitude', 'longitude', 'tract_geoid_19', 'tract_geoid_20']
 new_columns = cols_to_order + (df_full.columns.drop(cols_to_order).tolist())
 df_full = df_full[new_columns]
 
+print(f'Screening out mislocated addresses\n')
+#  Screen out mis-located addresses in df_full, i.e., those misidentified to be outside of Albuquerque
+ndf_full = df_full.shape[0]
+df_full = df_full[(df_full['tract_geoid_19'] < 35002000000) &
+                  (df_full['tract_geoid_19'] >= 35001000000)]  # Relevant tracts: 35001xxxxxx
+
+print(f'{ndf_full - df_full.shape[0]} entries ({100 * (ndf_full - df_full.shape[0]) / ndf_full:.2f}% of census-tract '
+      f'tracked entries) in df resolved to locations outside of Albuquerque and have been removed.\n')
+
 fname_full = 'DataFiles/WUA_full.csv'
 df_full.to_csv(fname_full, index=False)
 
