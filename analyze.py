@@ -38,6 +38,7 @@ print(f'Shape of {fname}: {df_full.shape}')
 #  Get lat./long. from location delimited df_full
 df_coord = df_full.drop_duplicates(subset='ADDRESS')[['latitude', 'longitude']]
 
+#  Drop ADDRESS column
 df_full.drop(['ADDRESS'], axis=1)
 
 #  Convert READDATE to datetime type
