@@ -35,7 +35,8 @@ address_duplicates = pd.DataFrame(temp[temp.duplicated(subset=['latitude', 'long
 address_duplicates_index = df[df.ADDRESS.isin(address_duplicates.values.flatten())].index
 df.drop(address_duplicates_index, inplace=True)
 
-print(f'{ncoord - df.shape[0]} addresses ({100 * (ncoord - df.shape[0]) / ncoord:.2f}% '
+print(f'{ncoord - df.drop_duplicates(subset="ADDRESS").shape[0]} addresses '
+      f'({100 * (ncoord - df.drop_duplicates(subset="ADDRESS").shape[0]) / ncoord:.2f}% '
       f'of the {ncoord} total addresses) resolved to the same location as another address. '
       f'\nOnly the first address within each set of duplicate addresses has been retained.\n')
 
@@ -54,13 +55,13 @@ print(f'INFO: Shape of df_coord_combined: {df_coord_combined.shape}.\n')
 print(f'Saving combined coordinate dataframe to single file...\n')
 #  Save combined, non-duplicate coordinates to single CSV
 fname_save_coord = 'DataFiles/Lat_Long/WUA_geo_combined.csv'
-df_coord_combined.to_csv(fname_save_coord, index=False)
+# df_coord_combined.to_csv(fname_save_coord, index=False)
 
 #####
 #  Geolocate to census tract
 #####
 
-year = 2019
+year = 2020
 
 print(f'Gelocating to {year} census tracts...\n')
 
@@ -79,7 +80,7 @@ print(f'Shape (approx.) of each of the {batch} batched coordinate frames: {df_co
 
 #  Add census tract identifier to each lat./long.
 for i, frame in enumerate(df_coord_combined_chunked):
-    print(f'{0 + i}/{batch}:')
+    print(f'{i + 1}/{batch}:')
     print(f'  Begun...')
 
     frame['tract_geoid'] = frame.parallel_apply(lambda row:
@@ -88,14 +89,14 @@ for i, frame in enumerate(df_coord_combined_chunked):
                                                     y=row[0])['Census Tracts'][0]['GEOID'],
                                                 axis=1)
 
-    fname_save_frame = f'DataFiles/Census/WUA_tracts_{year}_{i}.csv'
+    fname_save_frame = f'DataFiles/Census/{year}/WUA_tracts_{year}_{i}.csv'
     frame.to_csv(fname_save_frame, index=False)
 
     print(f'  Complete.\n')
 
 print(f'Concatenating batched census tract files...\n')
 census_full = pd.concat(
-    (pd.read_csv(f) for f in [f'DataFiles/Census/WUA_tracts_{year}_{i}.csv' for i in range(batch)]))
+    (pd.read_csv(f) for f in [f'DataFiles/Census/{year}/WUA_tracts_{year}_{i}.csv' for i in range(batch)]))
 
 print(f'Merging df with census tracts...\n')
 df_full = census_full.merge(df, on=['latitude', 'longitude'], how='inner')

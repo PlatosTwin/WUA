@@ -8,8 +8,7 @@ classes: wide
 ---
 
 - 13,760,088 raw rows
-- 13,759,232 valid rows
-- 116,998 unique addresses
-- 116,990 geolocated addresses
+- 13,364,437 valid rows<sup>1</sup>
+- 113,748 valid addresses
 - 119 days of data per address (approximately)
 - 24 readings (hourly) per day
