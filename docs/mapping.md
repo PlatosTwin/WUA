@@ -12,7 +12,7 @@ classes: wide
     Water Meter Locations
 </h3>
 
-<p style="text-align: center;"><iframe src="Visuals/LocationMap_n17058_downsamp_f0.15_r1.html" height="600" width="1100"></iframe></p>
+<p style="text-align: center;"><iframe src="visuals/LocationMap_n17058_downsamp_f0.15_r1.html" height="600" width="1100"></iframe></p>
 
 
 <p></p>
@@ -21,4 +21,4 @@ classes: wide
     Mean Water Usage by Census Tract
 </h3>
 
-<p style="text-align: center;"><iframe src="Visuals/TractsMap2019_n17058_downsamp_f0.15_r1.html" height="600" width="1100"></iframe></p>
+<p style="text-align: center;"><iframe src="visuals/TractsMap2019_n17058_downsamp_f0.15_r1.html" height="600" width="1100"></iframe></p>

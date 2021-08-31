@@ -12,4 +12,4 @@ classes: wide
     Mean Water Usage Hourly
 </h3>
 
-<p style="text-align: center;"><iframe src="Visuals/HourlyBar_n17058_downsamp_f0.15_r1.html" height="600" width="1100"></iframe></p>
+<p style="text-align: center;"><iframe src="visuals/HourlyBar_n17058_downsamp_f0.15_r1.html" height="600" width="1100"></iframe></p>
