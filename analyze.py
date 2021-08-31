@@ -13,10 +13,9 @@ import threading
 #####
 # TODO: Map largest individual users
 # TODO: Add popups to maps
-# TODO: Check whether df_geo num. rows == df.groupby(['latitude', 'longitude']) num. rows
 # TODO: Style bar plot
 # TODO: Style map(s)
-# TODO: Time study
+# TODO: Time study (in-depth)
 # TODO: Sprinkler use study (add M, W, F and subtract T, R, S?)
 #####
 
@@ -35,9 +34,6 @@ df_full = pd.read_csv(fname, skiprows=0, low_memory=False)
 
 #  Get lat./long. from location delimited df_full
 df_coord = df_full.drop_duplicates(subset='ADDRESS')[['latitude', 'longitude']]
-
-#  Drop ADDRESS column
-df_full.drop(['ADDRESS'], axis=1, inplace=True)
 
 #  Convert READDATE to datetime type
 df_full.loc[:, 'READDATE'] = pd.to_datetime(df_full['READDATE'])
@@ -105,7 +101,7 @@ days_of_week = []
 temp = None
 for d in day_names:
     exec('temp = ' + d)
-    days_of_week.append([temp.mean(axis=1).mean(), temp.mean(axis=1).std()])
+    days_of_week.append([temp.mean(axis=1, numeric_only=True).mean(), temp.mean(axis=1, numeric_only=True).std()])
 
 #  Create figure
 fig = go.Figure(layout_yaxis_range=[0, 4])
@@ -189,7 +185,7 @@ df_geo_sampled_arr = df_geo_sampled[['latitude', 'longitude']].to_numpy()
 m.add_child(plugins.HeatMap(df_geo_sampled_arr, radius=15, min_opacity=0.20))
 
 #  Save file in background
-background_locmap = BackgroundSave(m, f'LocationMap_n{df_coord.shape[0]}{downsamp_loc}{downsamp}.html')
+background_locmap = BackgroundSave(m, f'docs/visuals/LocationMap_n{df_coord.shape[0]}{downsamp_loc}{downsamp}.html')
 background_locmap.start()
 
 #####
@@ -207,7 +203,7 @@ fig = px.bar(total_mean_usage_hrly)
 # fig.show()
 
 #  Save file in background
-background_fig = BackgroundSave(fig, f'HourlyBar_n{df_coord.shape[0]}{downsamp}.html')
+background_fig = BackgroundSave(fig, f'docs/visuals/HourlyBar_n{df_coord.shape[0]}{downsamp}.html')
 background_fig.start()
 
 #####
@@ -232,8 +228,8 @@ df_tract['tract_geoid_19'] = df_tract.tract_geoid_19.astype(str)
 df_tract.rename(columns={0: 'mean_usage_daily'}, inplace=True)
 
 #  Add mean daily usage and population to df_tract
-df_tract['mean_usage_daily'] = \
-    np.log(df_tract['mean_usage_daily'].replace(0.0, np.nan)).replace(np.nan, 0.0)
+# df_tract['mean_usage_daily'] = \
+#     np.log(df_tract['mean_usage_daily'].replace(0.0, np.nan)).replace(np.nan, 0.0)
 df_tract = df_tract.merge(df_acs, left_on='tract_geoid_19', right_on='GEO_ID', how='inner')
 
 #  Initialize mapping
@@ -252,10 +248,13 @@ folium.Choropleth(
     fill_color='YlGnBu',
     fill_opacity=0.3,
     line_opacity=0.5,
-    legend_name='Mean Daily Water Usage (log)',
+    legend_name='Mean Daily Water Usage',
 ).add_to(tracts)
 
-tracts.save(f'TractsMap2019_n{df_coord.shape[0]}{downsamp}.html')
+#  Save file in background
+background_tracts = BackgroundSave(tracts, f'docs/visuals/TractsMap2019_n{df_coord.shape[0]}{downsamp}.html')
+background_tracts.start()
 
 background_locmap.join()
 background_fig.join()
+background_tracts.join()

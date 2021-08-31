@@ -39,7 +39,8 @@ print(f'Saving downsampled versions...\n')
 random_state = 1
 for frac in [0.05, 0.075, 0.1, 0.15, 0.3]:
     address_sampled = df_full.drop_duplicates(subset=['latitude', 'longitude']).sample(frac=frac, random_state=random_state)
-    df_sampled = address_sampled.merge(df_full, on=['latitude', 'longitude'], how='inner')
+    df_sampled = address_sampled.merge(df_full, on=['latitude', 'longitude'],
+                                       how='inner', suffixes=('', '_DROP')).filter(regex='^(?!.*_DROP)')
     fname_save_df_downsampled = f'DataFiles/WUA_full_downsamp_f{frac}_r{random_state}.csv'
     df_sampled.to_csv(fname_save_df_downsampled, index=False)
 
